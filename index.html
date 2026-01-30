@@ -205,7 +205,7 @@
     </div><!-- Settings Panel -->
     <div id="settings-panel" class="hidden no-print rounded-3xl shadow-2xl p-6 mb-8 glass-effect animate-fade-in" style="background: rgba(255, 255, 255, 0.95);">
      <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-3"><span class="text-3xl">��️</span>
+      <div class="flex items-center gap-3"><span class="text-3xl">�����</span>
        <h2 class="font-heading text-2xl font-semibold text-slate-800">Pengaturan</h2>
       </div><button onclick="toggleSettings()" class="text-2xl text-slate-600 hover:text-slate-900 transition-all hover:rotate-90">✕</button>
      </div>
@@ -841,30 +841,54 @@
     // Confirm delete with inline UI
     function confirmDelete(id) {
       const card = document.querySelector(`[data-id="${id}"]`);
+      if (!card) return;
+      
       const deleteBtn = card.querySelector('.delete-btn');
+      if (!deleteBtn) return;
       
-      deleteBtn.innerHTML = '<span class="text-xl">✓ Yakin?</span>';
+      // Check if already in confirm state
+      if (deleteBtn.dataset.confirmState === 'confirm') {
+        // Already showing confirm, so delete now
+        deleteReceipt(id);
+        return;
+      }
+      
+      // Set to confirm state
+      deleteBtn.dataset.confirmState = 'confirm';
+      deleteBtn.innerHTML = '<span class="text-base">✓</span>';
       deleteBtn.style.background = '#ef4444';
+      deleteBtn.style.borderColor = '#ef4444';
       deleteBtn.style.color = '#fff';
-      deleteBtn.onclick = () => deleteReceipt(id);
       
-      setTimeout(() => {
+      // Reset after 3 seconds
+      const timeoutId = setTimeout(() => {
         if (deleteBtn && document.contains(deleteBtn)) {
+          delete deleteBtn.dataset.confirmState;
           deleteBtn.innerHTML = '<span class="text-xl">🗑️</span>';
           deleteBtn.style.background = 'rgba(239, 68, 68, 0.15)';
           deleteBtn.style.border = '1px solid rgba(239, 68, 68, 0.3)';
           deleteBtn.style.color = '';
-          deleteBtn.onclick = () => confirmDelete(id);
         }
       }, 3000);
+      
+      // Store timeout ID to clear it if deleted
+      deleteBtn.dataset.timeoutId = timeoutId;
     }
 
     // Delete receipt
     function deleteReceipt(id) {
+      const card = document.querySelector(`[data-id="${id}"]`);
+      if (card) {
+        const deleteBtn = card.querySelector('.delete-btn');
+        if (deleteBtn && deleteBtn.dataset.timeoutId) {
+          clearTimeout(parseInt(deleteBtn.dataset.timeoutId));
+        }
+      }
+      
       receipts = receipts.filter(r => r.id !== id);
       saveReceipts(receipts);
       updateReceiptList();
-      showToast('Kwitansi berhasil dihapus');
+      showToast('✅ Kwitansi berhasil dihapus!', 'success');
     }
 
     // Print single receipt
@@ -1077,5 +1101,5 @@
       initializeApp();
     }
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c5fb721c550b573',t:'MTc2OTc2Mjk2MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c5fc904c132b573',t:'MTc2OTc2MzY5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
