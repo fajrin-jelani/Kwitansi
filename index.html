@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kwitansi Pembayaran - GitHub Version</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=Outfit:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    .font-heading {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+    }
+    .font-body {
+      font-family: 'Outfit', system-ui, sans-serif;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+    }
+    .receipt-pattern {
+      background-image: 
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+    }
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+    }
+    .stat-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+      pointer-events: none;
+    }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-fade-in {
+      animation: fadeInUp 0.5s ease-out forwards;
+    }
+    .pulse-dot {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 16px 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      font-weight: 500;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .toast.success {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.95) 0%, rgba(22, 163, 74, 0.95) 100%);
+      color: white;
+      border: 1px solid rgba(34, 197, 94, 0.5);
+    }
+    .toast.error {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.95) 0%, rgba(220, 38, 38, 0.95) 100%);
+      color: white;
+      border: 1px solid rgba(239, 68, 68, 0.5);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full font-body">
+  <div id="app" class="h-full w-full overflow-auto" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);"><!-- GitHub Badge -->
+   <div class="no-print fixed top-4 left-4 z-50">
+    <div class="glass-effect px-4 py-2 rounded-xl flex items-center gap-2"><span class="text-2xl">📦</span> <span class="text-sm font-semibold text-slate-800">GitHub Version</span>
+    </div>
+   </div><!-- Main Container -->
+   <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8"><!-- Header -->
+    <div class="text-center mb-8 mt-16 sm:mt-8">
+     <div class="flex items-center justify-center gap-4 mb-3">
+      <div class="p-3 rounded-2xl glass-effect"><span class="text-4xl">💎</span>
+      </div>
+      <h1 id="main-title" class="font-heading text-4xl sm:text-5xl font-bold gradient-text"><span id="title-text">Kwitansi Pembayaran</span></h1><button onclick="toggleSettings()" class="p-3 rounded-2xl glass-effect transition-all hover:scale-110 hover:rotate-90" title="Pengaturan"> <span class="text-2xl">⚙️</span> </button>
+     </div>
+     <p class="text-slate-700 text-base font-medium">Kelola kwitansi pembayaran dengan mudah dan modern ✨</p>
+    </div><!-- Stats Dashboard -->
+    <div id="stats-dashboard" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 no-print"><!-- Total Kwitansi -->
+     <div class="stat-card glass-effect rounded-2xl p-6 card-hover" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 100%); border: 1px solid rgba(99, 102, 241, 0.3);">
+      <div class="flex items-center justify-between mb-2"><span class="text-3xl">📋</span>
+       <div class="w-2 h-2 rounded-full bg-indigo-400 pulse-dot"></div>
+      </div>
+      <div class="text-white text-3xl font-bold font-heading mb-1" id="total-receipts">
+       0
+      </div>
+      <div class="text-white text-sm font-medium">
+       Total Kwitansi
+      </div>
+     </div><!-- Total Nilai -->
+     <div class="stat-card glass-effect rounded-2xl p-6 card-hover" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(168, 85, 247, 0.1) 100%); border: 1px solid rgba(168, 85, 247, 0.3);">
+      <div class="flex items-center justify-between mb-2"><span class="text-3xl">💰</span>
+       <div class="w-2 h-2 rounded-full bg-purple-400 pulse-dot"></div>
+      </div>
+      <div class="text-white text-2xl font-bold font-heading mb-1" id="total-amount">
+       Rp 0
+      </div>
+      <div class="text-white text-sm font-medium">
+       Total Nilai
+      </div>
+     </div><!-- Kwitansi Terbaru -->
+     <div class="stat-card glass-effect rounded-2xl p-6 card-hover" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.1) 100%); border: 1px solid rgba(59, 130, 246, 0.3);">
+      <div class="flex items-center justify-between mb-2"><span class="text-3xl">⚡</span>
+       <div class="w-2 h-2 rounded-full bg-blue-400 pulse-dot"></div>
+      </div>
+      <div class="text-white text-2xl font-bold font-heading mb-1" id="latest-receipt">
+       -
+      </div>
+      <div class="text-white text-sm font-medium">
+       Terbaru
+      </div>
+     </div>
+    </div><!-- Settings Panel -->
+    <div id="settings-panel" class="hidden no-print rounded-3xl shadow-2xl p-6 mb-8 glass-effect animate-fade-in" style="background: rgba(255, 255, 255, 0.95);">
+     <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3"><span class="text-3xl">⚙️</span>
+       <h2 class="font-heading text-2xl font-semibold text-slate-800">Pengaturan</h2>
+      </div><button onclick="toggleSettings()" class="text-2xl text-slate-600 hover:text-slate-900 transition-all hover:rotate-90">✕</button>
+     </div>
+     <form id="settings-form" class="space-y-5">
+      <div><label for="settings-title" class="block text-sm font-semibold mb-2 text-slate-700">Judul Kwitansi</label> <input type="text" id="settings-title" class="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none font-body text-slate-800" style="border-color: rgba(203, 213, 225, 0.8); background: rgba(255, 255, 255, 0.9);" onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 4px rgba(99,102,241,0.2)'" onblur="this.style.borderColor='rgba(203,213,225,0.8)'; this.style.boxShadow='none'" placeholder="Kwitansi Pembayaran">
+      </div>
+      <div><label for="settings-company" class="block text-sm font-semibold mb-2 text-slate-700">Nama Perusahaan / PT</label> <input type="text" id="settings-company" class="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none font-body text-slate-800" style="border-color: rgba(203, 213, 225, 0.8); background: rgba(255, 255, 255, 0.9);" onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 4px rgba(99,102,241,0.2)'" onblur="this.style.borderColor='rgba(203,213,225,0.8)'; this.style.boxShadow='none'" placeholder="PT. MAJU BERSAMA">
+      </div>
+      <div><label for="settings-address" class="block text-sm font-semibold mb-2 text-slate-700">Alamat Perusahaan</label> <input type="text" id="settings-address" class="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none font-body text-slate-800" style="border-color: rgba(203, 213, 225, 0.8); background: rgba(255, 255, 255, 0.9);" onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 4px rgba(99,102,241,0.2)'" onblur="this.style.borderColor='rgba(203,213,225,0.8)'; this.style.boxShadow='none'" placeholder="Jl. Raya Utama No. 123, Jakarta">
+      </div>
+      <div class="pt-4 border-t-2" style="border-color: rgba(203, 213, 225, 0.4);">
+       <div class="flex items-center gap-2 mb-4"><span class="text-2xl">✍️</span>
+        <h3 class="font-semibold text-base text-slate-800">Tanda Tangan</h3>
+       </div>
+       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div><label for="settings-location" class="block text-sm font-semibold mb-2 text-slate-700">Tempat</label> <input type="text" id="settings-location" class="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none font-body text-slate-800" style="border-color: rgba(203, 213, 225, 0.8); background: rgba(255, 255, 255, 0.9);" onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 4px rgba(99,102,241,0.2)'" onblur="this.style.borderColor='rgba(203,213,225,0.8)'; this.style.boxShadow='none'" placeholder="Jakarta">
+        </div>
+        <div><label for="settings-signature-name" class="block text-sm font-semibold mb-2 text-slate-700">Nama Penandatangan</label> <input type="text" id="settings-signature-name" class="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none font-body text-slate-800" style="border-color: rgba(203, 213, 225, 0.8); background: rgba(255, 255, 255, 0.9);" onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 4px rgba(99,102,241,0.2)'" onblur="this.style.borderColor='rgba(203,213,225,0.8)'; this.style.boxShadow='none'" placeholder="Penerima">
+        </div>
+       </div>
+       <div class="mt-4"><label for="settings-signature-phone" class="block text-sm font-semibold mb-2 text-slate-700">No. HP / Telepon</label> <input type="text" id="settings-signature-phone" class="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none font-body text-slate-800" style="border-color: rgba(203, 213, 225, 0.8); background: rgba(255, 255, 255, 0.9);" onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 4px rgba(99,102,241,0.2)'" onblur="this.style.borderColor='rgba(203,213,225,0.8)'; this.style.boxShadow='none'" placeholder="081234567890">
+       </div>
+      </div><button type="submit" class="w-full py-4 px-6 rounded-xl font-semibold text-white transition-all transform hover:scale-[1.02] active:scale-[0.98] font-heading text-lg" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); box-shadow: 0 8px 24px rgba(99,102,241,0.4);"> 💾 Simpan Pengaturan </button>
+     </form>
+    </div><!-- Form Input -->
+    <div class="no-print rounded-3xl shadow-2xl p-6 mb-8 glass-effect" style="background: rgba(255, 255, 255, 0.95);">
+     <div class="flex items-center gap-3 mb-6"><span class="text-3xl">����</span>
+      <h2 class="font-heading text-2xl font-semibold text-slate-800">Buat Kwitansi Baru</h2>
+     </div>
+     <form id="receipt-form" class="space-y-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+       <div><label for="diterima-dari" class="block text-sm font-semibold mb-2 text-slate-700">Telah Diterima Dari</label> <input type="text" id="diterima-dari" required class="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none font-body text-slate-800" style="border-color: rgba(203, 213, 225, 0.8); background: rgba(255, 255, 255, 0.9);" onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 4px rgba(99,102,241,0.2)'" onblur="this.style.borderColor='rgba(203,213,225,0.8)'; this.style.boxShadow='none'" placeholder="Nama pembayar">
+       </div>
+       <div><label for="uang-sejumlah" class="block text-sm font-semibold mb-2 text-slate-700">Uang Sejumlah (Rp)</label> <input type="number" id="uang-sejumlah" required min="0" class="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none font-body text-slate-800" style="border-color: rgba(203, 213, 225, 0.8); background: rgba(255, 255, 255, 0.9);" onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 4px rgba(99,102,241,0.2)'" onblur="this.style.borderColor='rgba(203,213,225,0.8)'; this.style.boxShadow='none'" placeholder="0">
+       </div>
+      </div>
+      <div><label for="untuk-pembayaran" class="block text-sm font-semibold mb-2 text-slate-700">Untuk Pembayaran</label> <textarea id="untuk-pembayaran" required rows="2" class="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none resize-none font-body text-slate-800" style="border-color: rgba(203, 213, 225, 0.8); background: rgba(255, 255, 255, 0.9);" onfocus="this.style.borderColor='#6366f1'; this.style.boxShadow='0 0 0 4px rgba(99,102,241,0.2)'" onblur="this.style.borderColor='rgba(203,213,225,0.8)'; this.style.boxShadow='none'" placeholder="Keterangan pembayaran"></textarea>
+      </div><button type="submit" id="submit-btn" class="w-full py-4 px-6 rounded-xl font-semibold text-white transition-all transform hover:scale-[1.02] active:scale-[0.98] font-heading text-lg" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); box-shadow: 0 8px 24px rgba(99,102,241,0.4);"> ✨ Buat Kwitansi </button>
+     </form>
+    </div><!-- Receipt List -->
+    <div class="no-print">
+     <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3"><span class="text-3xl">📚</span>
+       <h2 class="font-heading text-2xl font-semibold text-slate-800">Daftar Kwitansi</h2>
+      </div>
+      <div class="flex items-center gap-3"><button id="select-mode-btn" onclick="toggleSelectMode()" class="hidden px-4 py-2.5 rounded-xl font-medium transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2 glass-effect text-slate-700" style="background: rgba(255, 255, 255, 0.9);"> <span>☑️ Pilih Kwitansi</span> </button> <button id="print-all-btn" onclick="printAllReceipts()" class="hidden px-4 py-2.5 rounded-xl font-medium text-white transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); box-shadow: 0 4px 16px rgba(99,102,241,0.4);"> <span>🖨️ Cetak Semua</span> </button> <span id="receipt-count" class="text-sm px-4 py-2 rounded-xl font-medium glass-effect text-slate-700" style="background: rgba(255, 255, 255, 0.9);">0 kwitansi</span>
+      </div>
+     </div><!-- Selection Mode Actions -->
+     <div id="selection-actions" class="hidden mb-6 p-5 rounded-2xl glass-effect animate-fade-in" style="border: 2px solid rgba(99,102,241,0.5); background: rgba(255, 255, 255, 0.95);">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+       <div class="flex items-center gap-3"><span class="font-medium text-slate-800 font-heading text-lg"> <span id="selected-count">0</span> kwitansi dipilih </span> <button onclick="selectAllReceipts()" class="px-4 py-2 text-sm rounded-lg transition-all hover:scale-105 text-slate-700 font-medium" style="background: rgba(203, 213, 225, 0.5);"> Pilih Semua </button> <button onclick="deselectAllReceipts()" class="px-4 py-2 text-sm rounded-lg transition-all hover:scale-105 text-slate-700 font-medium" style="background: rgba(203, 213, 225, 0.5);"> Batal Pilih </button>
+       </div>
+       <div class="flex items-center gap-2"><button onclick="printSelectedReceipts()" id="print-selected-btn" class="px-5 py-2.5 rounded-xl font-medium text-white transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); box-shadow: 0 4px 16px rgba(99,102,241,0.4);"> 🖨️ Cetak Terpilih </button> <button onclick="toggleSelectMode()" class="px-5 py-2.5 rounded-xl font-medium transition-all text-white" style="background: rgba(239, 68, 68, 0.8); border: 1px solid rgba(239, 68, 68, 0.5);"> ✕ Tutup </button>
+       </div>
+      </div>
+     </div>
+     <div id="receipt-list" class="space-y-4">
+      <div id="empty-state" class="text-center py-16 rounded-3xl glass-effect" style="background: rgba(255, 255, 255, 0.95);">
+       <div class="text-6xl mb-4">
+        📭
+       </div>
+       <p class="text-slate-800 text-lg font-bold">Belum ada kwitansi</p>
+       <p class="text-slate-600 text-sm mt-2">Buat kwitansi pertama Anda sekarang! ✨</p>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    // Default configuration
+    const defaultConfig = {
+      kwitansi_title: 'Kwitansi Pembayaran',
+      company_name: 'Fadjrin',
+      company_address: 'Pasar Komura, Mangkupalas',
+      signature_location: 'Samarinda',
+      signature_name: 'Fadjrin',
+      signature_phone: '082351123433'
+    };
+
+    // LocalStorage keys
+    const STORAGE_KEYS = {
+      RECEIPTS: 'kwitansi_receipts',
+      CONFIG: 'kwitansi_config',
+      SERIAL_COUNTER: 'kwitansi_serial_counter'
+    };
+
+    // Load saved config from localStorage or use default
+    function loadSavedConfig() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEYS.CONFIG);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return { ...defaultConfig, ...parsed };
+        }
+      } catch (e) {
+        console.error('Error loading config:', e);
+      }
+      return { ...defaultConfig };
+    }
+
+    // Save config to localStorage
+    function saveConfigToStorage(configToSave) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(configToSave));
+      } catch (e) {
+        console.error('Error saving config:', e);
+      }
+    }
+
+    // Load receipts from localStorage
+    function loadReceipts() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEYS.RECEIPTS);
+        if (saved) {
+          return JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error('Error loading receipts:', e);
+      }
+      return [];
+    }
+
+    // Save receipts to localStorage
+    function saveReceipts(receiptsToSave) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.RECEIPTS, JSON.stringify(receiptsToSave));
+      } catch (e) {
+        console.error('Error saving receipts:', e);
+      }
+    }
+
+    // Get and increment serial counter
+    function getNextSerialNumber() {
+      try {
+        let counter = parseInt(localStorage.getItem(STORAGE_KEYS.SERIAL_COUNTER) || '0');
+        counter++;
+        localStorage.setItem(STORAGE_KEYS.SERIAL_COUNTER, counter.toString());
+        return counter;
+      } catch (e) {
+        console.error('Error with serial counter:', e);
+        return Date.now(); // Fallback to timestamp
+      }
+    }
+
+    let config = loadSavedConfig();
+    let receipts = loadReceipts();
+    let isSelectMode = false;
+
+    // Initialize app
+    function initializeApp() {
+      updateReceiptList();
+      initializeDisplay();
+    }
+
+    // Toggle select mode
+    function toggleSelectMode() {
+      isSelectMode = !isSelectMode;
+      const checkboxes = document.querySelectorAll('.receipt-checkbox');
+      const actionButtons = document.querySelectorAll('.action-buttons');
+      const selectionActions = document.getElementById('selection-actions');
+      const selectModeBtn = document.getElementById('select-mode-btn');
+      const printAllBtn = document.getElementById('print-all-btn');
+      
+      if (isSelectMode) {
+        checkboxes.forEach(cb => cb.classList.remove('hidden'));
+        actionButtons.forEach(ab => ab.classList.add('hidden'));
+        selectionActions.classList.remove('hidden');
+        selectModeBtn.style.background = 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)';
+        selectModeBtn.style.color = '#fff';
+        selectModeBtn.querySelector('span').textContent = '✓ Mode Pilih Aktif';
+        printAllBtn.classList.add('hidden');
+      } else {
+        checkboxes.forEach(cb => {
+          cb.classList.add('hidden');
+          cb.checked = false;
+        });
+        actionButtons.forEach(ab => ab.classList.remove('hidden'));
+        selectionActions.classList.add('hidden');
+        selectModeBtn.style.background = 'rgba(255,255,255,0.9)';
+        selectModeBtn.style.color = '#334155';
+        selectModeBtn.querySelector('span').textContent = '☑️ Pilih Kwitansi';
+        if (receipts.length > 0) printAllBtn.classList.remove('hidden');
+        updateSelectedCount();
+      }
+    }
+
+    // Update selected count
+    function updateSelectedCount() {
+      const checkboxes = document.querySelectorAll('.receipt-checkbox:checked');
+      const countSpan = document.getElementById('selected-count');
+      countSpan.textContent = checkboxes.length;
+    }
+
+    // Select all receipts
+    function selectAllReceipts() {
+      const checkboxes = document.querySelectorAll('.receipt-checkbox');
+      checkboxes.forEach(cb => cb.checked = true);
+      updateSelectedCount();
+    }
+
+    // Deselect all receipts
+    function deselectAllReceipts() {
+      const checkboxes = document.querySelectorAll('.receipt-checkbox');
+      checkboxes.forEach(cb => cb.checked = false);
+      updateSelectedCount();
+    }
+
+    // Print selected receipts
+    function printSelectedReceipts() {
+      const selectedCheckboxes = document.querySelectorAll('.receipt-checkbox:checked');
+      
+      if (selectedCheckboxes.length === 0) {
+        showToast('Pilih minimal satu kwitansi untuk dicetak', 'error');
+        return;
+      }
+      
+      const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+      const selectedReceipts = receipts.filter(r => selectedIds.includes(r.id));
+      
+      if (selectedReceipts.length === 0) return;
+      
+      printMultipleReceipts(selectedReceipts, `Kwitansi Terpilih (${selectedReceipts.length} kwitansi)`);
+    }
+
+    // Toggle settings panel
+    function toggleSettings() {
+      const panel = document.getElementById('settings-panel');
+      const isHidden = panel.classList.contains('hidden');
+      
+      if (isHidden) {
+        document.getElementById('settings-title').value = config.kwitansi_title || defaultConfig.kwitansi_title;
+        document.getElementById('settings-company').value = config.company_name || defaultConfig.company_name;
+        document.getElementById('settings-address').value = config.company_address || defaultConfig.company_address;
+        document.getElementById('settings-location').value = config.signature_location || defaultConfig.signature_location;
+        document.getElementById('settings-signature-name').value = config.signature_name || defaultConfig.signature_name;
+        document.getElementById('settings-signature-phone').value = config.signature_phone || defaultConfig.signature_phone;
+        panel.classList.remove('hidden');
+      } else {
+        panel.classList.add('hidden');
+      }
+    }
+
+    // Convert number to Indonesian words
+    function terbilang(angka) {
+      const bilangan = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh', 'Sebelas'];
+      
+      if (angka < 12) {
+        return bilangan[angka];
+      } else if (angka < 20) {
+        return bilangan[angka - 10] + ' Belas';
+      } else if (angka < 100) {
+        return bilangan[Math.floor(angka / 10)] + ' Puluh ' + bilangan[angka % 10];
+      } else if (angka < 200) {
+        return 'Seratus ' + terbilang(angka - 100);
+      } else if (angka < 1000) {
+        return bilangan[Math.floor(angka / 100)] + ' Ratus ' + terbilang(angka % 100);
+      } else if (angka < 2000) {
+        return 'Seribu ' + terbilang(angka - 1000);
+      } else if (angka < 1000000) {
+        return terbilang(Math.floor(angka / 1000)) + ' Ribu ' + terbilang(angka % 1000);
+      } else if (angka < 1000000000) {
+        return terbilang(Math.floor(angka / 1000000)) + ' Juta ' + terbilang(angka % 1000000);
+      } else if (angka < 1000000000000) {
+        return terbilang(Math.floor(angka / 1000000000)) + ' Miliar ' + terbilang(angka % 1000000000);
+      }
+      return angka.toString();
+    }
+
+    // Format currency
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+    }
+
+    // Format date
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    // Generate receipt HTML for printing
+    function generateReceiptHTML(receipt) {
+      const companyName = config.company_name || defaultConfig.company_name;
+      const companyAddress = config.company_address || defaultConfig.company_address;
+      const signatureLocation = config.signature_location || defaultConfig.signature_location;
+      const signatureName = config.signature_name || defaultConfig.signature_name;
+      const signaturePhone = config.signature_phone || defaultConfig.signature_phone;
+      
+      return `
+        <div class="receipt">
+          <div class="header">
+            <h1>${companyName}</h1>
+            <p>${companyAddress}</p>
+          </div>
+          <div class="no-seri">No: ${String(receipt.no_seri).padStart(4, '0')}</div>
+          <div class="title">KWITANSI</div>
+          <div class="content">
+            <div class="row">
+              <span class="label">Telah diterima dari</span>
+              <span class="value">${receipt.diterima_dari}</span>
+            </div>
+            <div class="row">
+              <span class="label">Uang sejumlah</span>
+              <span class="value">${formatCurrency(receipt.uang_sejumlah)}</span>
+            </div>
+            <div class="terbilang"># ${receipt.terbilang} Rupiah #</div>
+            <div class="row">
+              <span class="label">Untuk pembayaran</span>
+              <span class="value">${receipt.untuk_pembayaran}</span>
+            </div>
+          </div>
+          <div style="text-align: right; margin-top: 8px; font-size: 13px;">
+            ${signatureLocation}, ${formatDate(receipt.tanggal)}
+          </div>
+          <div class="footer">
+            <div class="signature">
+              <div class="signature-line"></div>
+              <span style="font-size: 14px;">${signatureName}</span>
+              ${signaturePhone ? `<div style="font-size: 12px; color: #666; margin-top: 2px;">${signaturePhone}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Print multiple receipts
+    function printMultipleReceipts(receiptsToPrint, title) {
+      const receiptsHTML = receiptsToPrint.map(r => generateReceiptHTML(r)).join('');
+      
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Times New Roman', serif; padding: 10px; max-width: 210mm; margin: 0 auto; background: #f5f5f0; }
+            .receipt { 
+              border: 2px solid #2c5f2d; 
+              padding: 12px 16px; 
+              width: 100%; 
+              display: block; 
+              margin-bottom: 10px; 
+              box-sizing: border-box;
+              background: linear-gradient(135deg, #fef8e7 0%, #fefcf3 50%, #fef8e7 100%);
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .header { 
+              text-align: center; 
+              border-bottom: 2px solid #2c5f2d; 
+              padding-bottom: 6px; 
+              margin-bottom: 8px;
+              background: linear-gradient(to bottom, #e8f5e9 0%, transparent 100%);
+              padding-top: 4px;
+            }
+            .header h1 { font-size: 16px; margin-bottom: 3px; font-weight: bold; color: #1b4332; }
+            .header p { font-size: 14px; color: #2c5f2d; }
+            .title { 
+              text-align: center; 
+              font-size: 20px; 
+              font-weight: bold; 
+              margin: 8px 0; 
+              text-decoration: underline; 
+              color: #1b4332;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+            }
+            .no-seri { 
+              text-align: right; 
+              font-size: 13px; 
+              margin-bottom: 8px; 
+              color: #d32f2f; 
+              font-weight: bold;
+            }
+            .content { margin: 8px 0; }
+            .row { display: flex; margin: 5px 0; font-size: 14px; }
+            .label { width: 110px; font-weight: bold; color: #1b4332; }
+            .value { 
+              flex: 1; 
+              border-bottom: 1px dotted #2c5f2d; 
+              padding-left: 5px; 
+              font-size: 14px; 
+              color: #000;
+            }
+            .terbilang { 
+              background: linear-gradient(to right, #c8e6c9 0%, #e8f5e9 50%, #c8e6c9 100%); 
+              padding: 6px; 
+              margin: 8px 0; 
+              font-style: italic; 
+              text-align: center; 
+              font-size: 13px;
+              border: 1px dashed #2c5f2d;
+              color: #1b4332;
+              font-weight: 500;
+            }
+            .footer { display: flex; justify-content: flex-end; margin-top: 16px; font-size: 14px; }
+            .signature { text-align: center; width: 120px; }
+            .signature-line { 
+              border-bottom: 1px solid #1b4332; 
+              height: 40px; 
+              margin-bottom: 3px; 
+            }
+            .print-btn { 
+              position: fixed; 
+              top: 20px; 
+              right: 20px; 
+              padding: 12px 24px; 
+              background: #2c5f2d; 
+              color: white; 
+              border: none; 
+              border-radius: 8px; 
+              font-size: 16px; 
+              cursor: pointer; 
+              box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+              z-index: 1000;
+            }
+            .print-btn:hover { background: #1b4332; }
+            .print-btn:active { transform: scale(0.95); }
+            @media print {
+              .receipt { page-break-after: always; }
+              .receipt:last-child { page-break-after: auto; }
+              .print-btn { display: none; }
+              @page { size: A4; margin: 10mm; }
+              body { background: white; }
+            }
+          </style>
+        </head>
+        <body>
+          <button class="print-btn" onclick="window.print()">🖨️ Cetak ${receiptsToPrint.length} Kwitansi</button>
+          ${receiptsHTML}
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+
+    // Render receipt card
+    function createReceiptCard(receipt) {
+      const card = document.createElement('div');
+      card.className = 'rounded-3xl shadow-2xl overflow-hidden glass-effect card-hover animate-fade-in';
+      card.dataset.id = receipt.id;
+      card.style.background = 'rgba(255, 255, 255, 0.95)';
+      
+      card.innerHTML = `
+        <div class="p-6">
+          <div class="flex items-start justify-between mb-5">
+            <div class="flex items-start gap-4">
+              <input type="checkbox" 
+                class="receipt-checkbox hidden w-5 h-5 mt-1 rounded cursor-pointer" 
+                data-id="${receipt.id}"
+                onchange="updateSelectedCount()"
+                style="accent-color: #6366f1;">
+              <div>
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="text-3xl font-heading font-bold gradient-text">No. ${String(receipt.no_seri).padStart(4, '0')}</span>
+                  <span class="px-3 py-1.5 text-xs rounded-xl font-medium text-slate-700" style="background: rgba(203, 213, 225, 0.5);">${formatDate(receipt.tanggal)}</span>
+                </div>
+                <p class="text-sm text-slate-600 font-medium">${config.company_name || defaultConfig.company_name}</p>
+              </div>
+            </div>
+            <div class="flex gap-2 action-buttons">
+              <button onclick="printReceipt('${receipt.id}')" class="p-3 rounded-xl transition-all hover:scale-110" style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3);" title="Cetak">
+                <span class="text-xl">🖨️</span>
+              </button>
+              <button onclick="confirmDelete('${receipt.id}')" class="delete-btn p-3 rounded-xl transition-all hover:scale-110" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);" title="Hapus">
+                <span class="text-xl">🗑️</span>
+              </button>
+            </div>
+          </div>
+          
+          <div class="space-y-3 text-sm">
+            <div class="flex items-start">
+              <span class="w-36 font-semibold text-slate-700">Diterima dari</span>
+              <span class="flex-1 font-semibold text-slate-800">: ${receipt.diterima_dari}</span>
+            </div>
+            <div class="flex items-start">
+              <span class="w-36 font-semibold text-slate-700">Uang sejumlah</span>
+              <span class="flex-1 font-bold gradient-text text-lg">: ${formatCurrency(receipt.uang_sejumlah)}</span>
+            </div>
+            <div class="flex items-start">
+              <span class="w-36 font-semibold text-slate-700">Terbilang</span>
+              <span class="flex-1 italic text-slate-700">: ${receipt.terbilang} Rupiah</span>
+            </div>
+            <div class="flex items-start">
+              <span class="w-36 font-semibold text-slate-700">Pembayaran</span>
+              <span class="flex-1 text-slate-700">: ${receipt.untuk_pembayaran}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      return card;
+    }
+
+    // Update receipt list
+    function updateReceiptList() {
+      const listContainer = document.getElementById('receipt-list');
+      const emptyState = document.getElementById('empty-state');
+      const countBadge = document.getElementById('receipt-count');
+      const printAllBtn = document.getElementById('print-all-btn');
+      const selectModeBtn = document.getElementById('select-mode-btn');
+      
+      // Sort by serial number descending
+      receipts.sort((a, b) => b.no_seri - a.no_seri);
+      
+      countBadge.textContent = `${receipts.length} kwitansi`;
+      
+      // Update dashboard stats
+      updateDashboardStats();
+      
+      // Show/hide buttons
+      if (receipts.length > 0) {
+        if (!isSelectMode) {
+          printAllBtn.classList.remove('hidden');
+        }
+        selectModeBtn.classList.remove('hidden');
+      } else {
+        printAllBtn.classList.add('hidden');
+        selectModeBtn.classList.add('hidden');
+      }
+      
+      if (receipts.length === 0) {
+        emptyState.classList.remove('hidden');
+        const cards = listContainer.querySelectorAll('[data-id]');
+        cards.forEach(card => card.remove());
+        return;
+      }
+      
+      emptyState.classList.add('hidden');
+      
+      // Clear and rebuild list
+      const cards = listContainer.querySelectorAll('[data-id]');
+      cards.forEach(card => card.remove());
+      
+      receipts.forEach(receipt => {
+        const card = createReceiptCard(receipt);
+        listContainer.appendChild(card);
+      });
+    }
+
+    // Update dashboard statistics
+    function updateDashboardStats() {
+      const totalReceipts = document.getElementById('total-receipts');
+      const totalAmount = document.getElementById('total-amount');
+      const latestReceipt = document.getElementById('latest-receipt');
+      
+      totalReceipts.textContent = receipts.length;
+      
+      const sum = receipts.reduce((acc, r) => acc + (r.uang_sejumlah || 0), 0);
+      totalAmount.textContent = formatCurrency(sum);
+      
+      if (receipts.length > 0) {
+        const latest = receipts[0];
+        latestReceipt.textContent = `No. ${String(latest.no_seri).padStart(4, '0')}`;
+      } else {
+        latestReceipt.textContent = '-';
+      }
+    }
+
+    // Confirm delete with inline UI
+    function confirmDelete(id) {
+      const card = document.querySelector(`[data-id="${id}"]`);
+      const deleteBtn = card.querySelector('.delete-btn');
+      
+      deleteBtn.innerHTML = '<span class="text-xl">✓ Yakin?</span>';
+      deleteBtn.style.background = '#ef4444';
+      deleteBtn.style.color = '#fff';
+      deleteBtn.onclick = () => deleteReceipt(id);
+      
+      setTimeout(() => {
+        if (deleteBtn && document.contains(deleteBtn)) {
+          deleteBtn.innerHTML = '<span class="text-xl">🗑️</span>';
+          deleteBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+          deleteBtn.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+          deleteBtn.style.color = '';
+          deleteBtn.onclick = () => confirmDelete(id);
+        }
+      }, 3000);
+    }
+
+    // Delete receipt
+    function deleteReceipt(id) {
+      receipts = receipts.filter(r => r.id !== id);
+      saveReceipts(receipts);
+      updateReceiptList();
+      showToast('Kwitansi berhasil dihapus');
+    }
+
+    // Print single receipt
+    function printReceipt(id) {
+      const receipt = receipts.find(r => r.id === id);
+      if (!receipt) return;
+      
+      printMultipleReceipts([receipt], `Kwitansi No. ${String(receipt.no_seri).padStart(4, '0')}`);
+    }
+
+    // Print all receipts
+    function printAllReceipts() {
+      if (receipts.length === 0) return;
+      printMultipleReceipts(receipts, `Daftar Kwitansi (${receipts.length} kwitansi)`);
+    }
+
+    // Show toast message
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => toast.classList.add('show'), 10);
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Settings form submission
+    document.getElementById('settings-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const newConfig = {
+        kwitansi_title: document.getElementById('settings-title').value.trim() || defaultConfig.kwitansi_title,
+        company_name: document.getElementById('settings-company').value.trim() || defaultConfig.company_name,
+        company_address: document.getElementById('settings-address').value.trim() || defaultConfig.company_address,
+        signature_location: document.getElementById('settings-location').value.trim() || defaultConfig.signature_location,
+        signature_name: document.getElementById('settings-signature-name').value.trim() || defaultConfig.signature_name,
+        signature_phone: document.getElementById('settings-signature-phone').value.trim()
+      };
+      
+      config = newConfig;
+      saveConfigToStorage(newConfig);
+      
+      document.getElementById('title-text').textContent = config.kwitansi_title;
+      
+      const cards = document.querySelectorAll('[data-id] p.text-sm');
+      cards.forEach(p => {
+        if (p.classList.contains('font-medium')) {
+          p.textContent = config.company_name;
+        }
+      });
+      
+      toggleSettings();
+      showToast('Pengaturan berhasil disimpan! ✨');
+    });
+
+    // Form submission
+    document.getElementById('receipt-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const diterimaDari = document.getElementById('diterima-dari').value.trim();
+      const uangSejumlahInput = document.getElementById('uang-sejumlah').value;
+      const uangSejumlah = parseInt(uangSejumlahInput) || 0;
+      const untukPembayaran = document.getElementById('untuk-pembayaran').value.trim();
+      
+      console.log('Form submitted:', { diterimaDari, uangSejumlah, untukPembayaran });
+      
+      if (!diterimaDari || !untukPembayaran || uangSejumlah <= 0) {
+        showToast('Mohon lengkapi semua field dengan benar', 'error');
+        return;
+      }
+      
+      try {
+        const newReceipt = {
+          id: 'receipt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+          no_seri: getNextSerialNumber(),
+          diterima_dari: diterimaDari,
+          uang_sejumlah: uangSejumlah,
+          terbilang: terbilang(uangSejumlah).trim(),
+          untuk_pembayaran: untukPembayaran,
+          tanggal: new Date().toISOString()
+        };
+        
+        console.log('New receipt created:', newReceipt);
+        
+        receipts.unshift(newReceipt);
+        saveReceipts(receipts);
+        
+        console.log('Receipts after save:', receipts);
+        
+        updateReceiptList();
+        
+        document.getElementById('receipt-form').reset();
+        showToast('Kwitansi berhasil dibuat! ✨');
+        
+        // Scroll to receipt list
+        setTimeout(function() {
+          const receiptList = document.getElementById('receipt-list');
+          if (receiptList) {
+            receiptList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Error creating receipt:', error);
+        showToast('Gagal membuat kwitansi. Silakan coba lagi.', 'error');
+      }
+    });
+
+    // Initialize display
+    function initializeDisplay() {
+      document.getElementById('title-text').textContent = config.kwitansi_title || defaultConfig.kwitansi_title;
+    }
+
+    // Initialize app on load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeApp);
+    } else {
+      initializeApp();
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c5f4072a70ab593',t:'MTc2OTc1ODA5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
